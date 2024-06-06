@@ -1,9 +1,7 @@
-streamlit
-youtube_transcript_api
-nltk
-scikit-learn
-transformers
-textblob
-moviepy
-numpy
-re
+streamlit==0.88.0
+youtube_transcript_api==0.4.4
+nltk==3.6.5
+scikit-learn==0.24.2
+transformers==4.6.1
+textblob==0.15.3
+numpy==1.21.2
