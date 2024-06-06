@@ -6,3 +6,4 @@ transformers
 textblob
 numpy
 tensorflow
+tf-keras
