@@ -16,7 +16,7 @@ nltk.download('stopwords')
 nltk.download('wordnet')
 
 # Function to summarize text
-def summarize_text(text, max_length=150):
+def summarize_text(text, max_length=1500):
     summarization_pipeline = pipeline("summarization")
     summary = summarization_pipeline(text, max_length=max_length, min_length=30, do_sample=False)
     return summary[0]['summary_text']
