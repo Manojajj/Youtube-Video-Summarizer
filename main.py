@@ -1,5 +1,5 @@
 import streamlit as st
-from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
@@ -7,10 +7,10 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 from transformers import pipeline
 from textblob import TextBlob
-import numpy as np
+import re
+import nltk
 
 # Ensure that necessary NLTK data is downloaded
-import nltk
 nltk.download('punkt')
 nltk.download('stopwords')
 nltk.download('wordnet')
@@ -56,12 +56,23 @@ def main():
     video_url = st.text_input("Enter YouTube Video URL:", "")
 
     # User customization options
-    max_summary_length = st.slider("Max Summary Length:", 15000)
+    max_summary_length = st.slider("Max Summary Length:", 1000, 20000, 15000)
 
     if st.button("Summarize"):
         try:
+            # Extract video ID from URL
+            video_id = re.search(r"(?<=v=)[a-zA-Z0-9_-]+", video_url)
+            if not video_id:
+                st.error("Invalid YouTube URL. Please enter a valid URL.")
+                return
+            video_id = video_id.group(0)
+
             # Get transcript of the video
-            transcript = YouTubeTranscriptApi.get_transcript(video_url.split('v=')[1])
+            transcript = YouTubeTranscriptApi.get_transcript(video_id)
+            if not transcript:
+                st.error("Transcript not available for this video.")
+                return
+
             video_text = ' '.join([line['text'] for line in transcript])
 
             # Summarize the transcript
@@ -91,6 +102,8 @@ def main():
             st.write(f"Polarity: {sentiment.polarity}")
             st.write(f"Subjectivity: {sentiment.subjectivity}")
 
+        except TranscriptsDisabled:
+            st.error("Transcripts are disabled for this video.")
         except Exception as e:
             st.error(f"Error: {str(e)}")
 
