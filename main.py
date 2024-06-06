@@ -38,7 +38,7 @@ def extract_keywords(text):
 
 # Function to perform topic modeling (LDA)
 def topic_modeling(text):
-    vectorizer = CountVectorizer(max_df=0.95, min_df=2, stop_words='english')
+    vectorizer = CountVectorizer(max_df=2, min_df=0.95, stop_words='english')
     tf = vectorizer.fit_transform([text])
     lda_model = LatentDirichletAllocation(n_components=5, max_iter=5, learning_method='online', random_state=42)
     lda_model.fit(tf)
