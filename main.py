@@ -16,9 +16,9 @@ nltk.download('stopwords')
 nltk.download('wordnet')
 
 # Function to summarize text
-def summarize_text(text, max_length=1500):
+def summarize_text(text, max_length=15000):
     summarization_pipeline = pipeline("summarization")
-    summary = summarization_pipeline(text, max_length=max_length, min_length=30, do_sample=False)
+    summary = summarization_pipeline(text, max_length=max_length, min_length=50, do_sample=False)
     return summary[0]['summary_text']
 
 # Function to extract keywords
@@ -56,7 +56,7 @@ def main():
     video_url = st.text_input("Enter YouTube Video URL:", "")
 
     # User customization options
-    max_summary_length = st.slider("Max Summary Length:", 50, 300, 1500)
+    max_summary_length = st.slider("Max Summary Length:", 15000)
 
     if st.button("Summarize"):
         try:
