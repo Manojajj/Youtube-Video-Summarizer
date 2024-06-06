@@ -7,14 +7,18 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 from transformers import pipeline
 from textblob import TextBlob
-import moviepy.editor as mp
 import numpy as np
-import cv2
+
+# Ensure that necessary NLTK data is downloaded
+import nltk
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
 
 # Function to summarize text
 def summarize_text(text, max_length=150):
     summarization_pipeline = pipeline("summarization")
-    summary = summarization_pipeline(text, max_length=max_length)
+    summary = summarization_pipeline(text, max_length=max_length, min_length=30, do_sample=False)
     return summary[0]['summary_text']
 
 # Function to extract keywords
@@ -26,10 +30,9 @@ def extract_keywords(text):
     words = [lemmatizer.lemmatize(word.lower()) for word in words if word.isalnum()]
     keywords = [word for word in words if word not in stop_words and len(word) > 1]
 
-    # Take top 5 most common keywords
     counter = CountVectorizer().fit_transform([' '.join(keywords)])
-    indices = np.argsort(np.asarray(counter.sum(axis=0)).ravel())[::-1]
-    top_keywords = [key for key, value in Counter(counter, vocabulary).items() if value > 1][:5]
+    vocabulary = CountVectorizer().fit([' '.join(keywords)]).vocabulary_
+    top_keywords = sorted(vocabulary, key=vocabulary.get, reverse=True)[:5]
 
     return top_keywords
 
@@ -45,20 +48,7 @@ def topic_modeling(text):
         topics.append([feature_names[i] for i in topic.argsort()[:-6:-1]])
     return topics
 
-# Function to extract keyframes from video
-def extract_keyframes(video_path, num_frames=5):
-    cap = cv2.VideoCapture(video_path)
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    frame_indices = np.linspace(0, total_frames - 1, num_frames, dtype=int)
-    keyframes = []
-    for idx in frame_indices:
-        cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
-        ret, frame = cap.read()
-        if ret:
-            keyframes.append(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-    cap.release()
-    return keyframes
-
+# Main Streamlit app
 def main():
     st.title("YouTube Video Summarizer")
 
@@ -67,12 +57,11 @@ def main():
 
     # User customization options
     max_summary_length = st.slider("Max Summary Length:", 50, 300, 150)
-    num_keyframes = st.slider("Number of Keyframes:", 1, 10, 5)
 
     if st.button("Summarize"):
         try:
             # Get transcript of the video
-            transcript = YouTubeTranscriptApi.get_transcript(video_url)
+            transcript = YouTubeTranscriptApi.get_transcript(video_url.split('v=')[1])
             video_text = ' '.join([line['text'] for line in transcript])
 
             # Summarize the transcript
@@ -84,15 +73,10 @@ def main():
             # Perform topic modeling
             topics = topic_modeling(video_text)
 
-            # Extract keyframes from the video
-            # Replace 'video_path' with the actual path to the downloaded video file
-            video_path = 'video_path'
-            keyframes = extract_keyframes(video_path, num_frames=num_keyframes)
-
             # Perform sentiment analysis
             sentiment = TextBlob(video_text).sentiment
 
-            # Display summarized text, keywords, topics, keyframes, and sentiment
+            # Display summarized text, keywords, topics, and sentiment
             st.subheader("Video Summary:")
             st.write(summary)
 
@@ -102,10 +86,6 @@ def main():
             st.subheader("Topics:")
             for idx, topic in enumerate(topics):
                 st.write(f"Topic {idx+1}: {', '.join(topic)}")
-
-            st.subheader("Keyframes:")
-            for frame in keyframes:
-                st.image(frame, caption='Keyframe', use_column_width=True)
 
             st.subheader("Sentiment Analysis:")
             st.write(f"Polarity: {sentiment.polarity}")
