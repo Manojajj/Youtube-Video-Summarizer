@@ -6,4 +6,3 @@ transformers
 textblob
 moviepy
 numpy
-re
