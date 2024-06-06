@@ -1,5 +1,5 @@
 import streamlit as st
-from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled
+from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
@@ -48,6 +48,21 @@ def topic_modeling(text):
         topics.append([feature_names[i] for i in topic.argsort()[:-6:-1]])
     return topics
 
+# Function to extract YouTube video ID from URL
+def extract_video_id(url):
+    video_id = None
+    patterns = [
+        r'v=([^&]+)',  # Pattern for URLs with 'v=' parameter
+        r'youtu.be/([^?]+)',  # Pattern for shortened URLs
+        r'youtube.com/embed/([^?]+)'  # Pattern for embed URLs
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            video_id = match.group(1)
+            break
+    return video_id
+
 # Main Streamlit app
 def main():
     st.title("YouTube Video Summarizer")
@@ -61,11 +76,10 @@ def main():
     if st.button("Summarize"):
         try:
             # Extract video ID from URL
-            video_id = re.search(r"(?<=v=)[a-zA-Z0-9_-]+", video_url)
+            video_id = extract_video_id(video_url)
             if not video_id:
                 st.error("Invalid YouTube URL. Please enter a valid URL.")
                 return
-            video_id = video_id.group(0)
 
             # Get transcript of the video
             transcript = YouTubeTranscriptApi.get_transcript(video_id)
@@ -104,6 +118,8 @@ def main():
 
         except TranscriptsDisabled:
             st.error("Transcripts are disabled for this video.")
+        except NoTranscriptFound:
+            st.error("No transcript found for this video.")
         except Exception as e:
             st.error(f"Error: {str(e)}")
 
