@@ -1,15 +1,13 @@
 import streamlit as st
-from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled
-from youtube_transcript_api.formatters import TextFormatter
+from youtube_transcript_api import YouTubeTranscriptApi
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
-from transformers import pipeline, PipelineException
+from transformers import pipeline
 from textblob import TextBlob
 import numpy as np
-import re
 
 # Ensure that necessary NLTK data is downloaded
 import nltk
@@ -17,29 +15,11 @@ nltk.download('punkt')
 nltk.download('stopwords')
 nltk.download('wordnet')
 
-# Function to extract YouTube video ID from URL
-def extract_video_id(url):
-    video_id = None
-    patterns = [
-        r'v=([^&]+)',
-        r'be/([^&]+)',
-        r'youtube.com/embed/([^&]+)'
-    ]
-    for pattern in patterns:
-        match = re.search(pattern, url)
-        if match:
-            video_id = match.group(1)
-            break
-    return video_id
-
 # Function to summarize text
 def summarize_text(text, max_length=150):
-    try:
-        summarization_pipeline = pipeline("summarization")
-        summary = summarization_pipeline(text, max_length=max_length, min_length=30, do_sample=False)
-        return summary[0]['summary_text']
-    except PipelineException as e:
-        return f"Error summarizing text: {str(e)}"
+    summarization_pipeline = pipeline("summarization")
+    summary = summarization_pipeline(text, max_length=max_length, min_length=30, do_sample=False)
+    return summary[0]['summary_text']
 
 # Function to extract keywords
 def extract_keywords(text):
@@ -80,13 +60,8 @@ def main():
 
     if st.button("Summarize"):
         try:
-            video_id = extract_video_id(video_url)
-            if not video_id:
-                st.error("Invalid YouTube URL. Please check the format.")
-                return
-
             # Get transcript of the video
-            transcript = YouTubeTranscriptApi.get_transcript(video_id)
+            transcript = YouTubeTranscriptApi.get_transcript(video_url.split('v=')[1])
             video_text = ' '.join([line['text'] for line in transcript])
 
             # Summarize the transcript
@@ -116,10 +91,6 @@ def main():
             st.write(f"Polarity: {sentiment.polarity}")
             st.write(f"Subjectivity: {sentiment.subjectivity}")
 
-        except NoTranscriptFound:
-            st.error("No transcript found for this video.")
-        except TranscriptsDisabled:
-            st.error("Transcripts are disabled for this video.")
         except Exception as e:
             st.error(f"Error: {str(e)}")
 
