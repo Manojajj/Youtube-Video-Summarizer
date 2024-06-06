@@ -6,3 +6,4 @@ transformers
 textblob
 moviepy
 opencv-python
+OpenGL
